@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.ntfy.sh)",
+      "WebSearch",
+      "WebFetch(domain:ntfy.sh)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
