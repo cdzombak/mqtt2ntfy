@@ -28,6 +28,12 @@ type Config struct {
 		MaxRetries int    `yaml:"max_retries,omitempty"`
 		RetryDelay string `yaml:"retry_delay,omitempty"`
 	} `yaml:"ntfy"`
+	Heartbeat struct {
+		URL               string `yaml:"url,omitempty"`
+		Interval          string `yaml:"interval,omitempty"`
+		LivenessThreshold string `yaml:"liveness_threshold,omitempty"`
+		Port              int    `yaml:"port,omitempty"`
+	} `yaml:"heartbeat"`
 }
 
 // LoadConfig reads and parses the YAML configuration file
@@ -69,6 +75,18 @@ func validateConfig(config *Config) error {
 	if config.Ntfy.URL == "" {
 		return fmt.Errorf("ntfy.url is required in config")
 	}
+
+	// Check heartbeat configuration
+	if config.Heartbeat.URL != "" || config.Heartbeat.Port > 0 {
+		// Heartbeat is enabled - validate required fields
+		if config.Heartbeat.URL != "" && config.Heartbeat.Port > 0 {
+			return fmt.Errorf("heartbeat.url and heartbeat.port are mutually exclusive - set only one")
+		}
+		if config.Heartbeat.URL == "" && config.Heartbeat.Port == 0 {
+			return fmt.Errorf("heartbeat.url or heartbeat.port must be set when heartbeat is configured")
+		}
+	}
+
 	return nil
 }
 
@@ -88,6 +106,19 @@ func setDefaults(config *Config) {
 	}
 	if config.Ntfy.RetryDelay == "" {
 		config.Ntfy.RetryDelay = "1s"
+	}
+
+	// Only set heartbeat defaults if heartbeat is configured
+	if config.Heartbeat.URL != "" || config.Heartbeat.Port > 0 {
+		if config.Heartbeat.Interval == "" {
+			config.Heartbeat.Interval = "30s"
+		}
+		if config.Heartbeat.LivenessThreshold == "" {
+			config.Heartbeat.LivenessThreshold = "60s"
+		}
+		if config.Heartbeat.Port == 0 {
+			config.Heartbeat.Port = 8888
+		}
 	}
 }
 
@@ -123,6 +154,24 @@ func (c *Config) GetNtfyRetryDelay() time.Duration {
 	duration, err := time.ParseDuration(c.Ntfy.RetryDelay)
 	if err != nil {
 		return 1 * time.Second // fallback default
+	}
+	return duration
+}
+
+// GetHeartbeatInterval parses the heartbeat interval duration
+func (c *Config) GetHeartbeatInterval() time.Duration {
+	duration, err := time.ParseDuration(c.Heartbeat.Interval)
+	if err != nil {
+		return 30 * time.Second // fallback default
+	}
+	return duration
+}
+
+// GetHeartbeatLivenessThreshold parses the heartbeat liveness threshold duration
+func (c *Config) GetHeartbeatLivenessThreshold() time.Duration {
+	duration, err := time.ParseDuration(c.Heartbeat.LivenessThreshold)
+	if err != nil {
+		return 60 * time.Second // fallback default
 	}
 	return duration
 }

@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/cdzombak/heartbeat"
 )
 
 var version = "dev"
@@ -124,6 +127,43 @@ func main() {
 	defer mqttHandler.Disconnect(1000)
 
 	logger.Info("Connected to MQTT broker and subscribed to topic", "topic", config.MQTT.Topic)
+
+	// Initialize heartbeat if configured
+	var hb heartbeat.Heartbeat
+	if config.Heartbeat.URL != "" || config.Heartbeat.Port > 0 {
+		var err error
+		hb, err = heartbeat.NewHeartbeat(&heartbeat.Config{
+			HeartbeatInterval: config.GetHeartbeatInterval(),
+			LivenessThreshold: config.GetHeartbeatLivenessThreshold(),
+			HeartbeatURL:      config.Heartbeat.URL,
+			Port:              config.Heartbeat.Port,
+			OnError: func(err error) {
+				logger.Error("Heartbeat error", "error", err)
+			},
+		})
+		if err != nil {
+			logger.Error("Failed to create heartbeat", "error", err)
+			os.Exit(1)
+		}
+
+		hb.Start()
+		if config.Heartbeat.Port > 0 {
+			logger.Info("Heartbeat server started", "port", config.Heartbeat.Port)
+		} else {
+			logger.Info("Heartbeat client started", "url", config.Heartbeat.URL, "interval", config.Heartbeat.Interval)
+		}
+
+		hb.Alive(time.Now())
+		// Start a ticker to send heartbeats periodically while connected
+		ticker := time.NewTicker(config.GetHeartbeatInterval())
+		go func() {
+			for range ticker.C {
+				if hb != nil {
+					hb.Alive(time.Now())
+				}
+			}
+		}()
+	}
 
 	// Wait for interrupt signal to gracefully shutdown
 	c := make(chan os.Signal, 1)
