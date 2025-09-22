@@ -49,4 +49,4 @@ config.yaml
 
 # Test coverage
 coverage.out
-coverage.html
+coverage.html.claude/
