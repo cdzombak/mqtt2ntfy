@@ -13,9 +13,9 @@ mqtt2ntfy --config config.yaml [--verbose]
 
 mqtt2ntfy supports three configuration methods:
 
-**1. Command-line flags** (highest priority)
-**2. Environment variables**
-**3. Configuration file** (lowest priority)
+1. Command-line flags (highest priority)
+2. Environment variables
+3. Configuration file (lowest priority)
 
 ### Configuration File
 
