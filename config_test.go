@@ -299,3 +299,78 @@ func TestNormalizeBrokerURL(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadConfigWithOverrides(t *testing.T) {
+	tests := []struct {
+		name        string
+		flags       FlagConfig
+		expectError bool
+	}{
+		{
+			name: "flags only (no config file)",
+			flags: FlagConfig{
+				MQTTBroker: "flag-broker",
+				MQTTTopic:  "flag-topic",
+				NtfyURL:    "https://flag.example.com",
+			},
+			expectError: false,
+		},
+		{
+			name:        "missing required config",
+			flags:       FlagConfig{},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, err := LoadConfigWithOverrides("", tt.flags)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if config == nil {
+				t.Errorf("Config should not be nil")
+			}
+		})
+	}
+}
+
+func TestEnvironmentVariableOverrides(t *testing.T) {
+	config := Config{}
+	setDefaults(&config)
+	config.MQTT.Username = "base-user"
+	config.MQTT.Password = "base-pass"
+	config.Ntfy.AuthToken = "base-token"
+
+	// Set environment variables
+	os.Setenv("MQTT_USERNAME", "env-user")
+	os.Setenv("MQTT_PASSWORD", "env-pass")
+	os.Setenv("NTFY_AUTH_TOKEN", "env-token")
+	defer func() {
+		os.Unsetenv("MQTT_USERNAME")
+		os.Unsetenv("MQTT_PASSWORD")
+		os.Unsetenv("NTFY_AUTH_TOKEN")
+	}()
+
+	applyEnvOverrides(&config)
+
+	if config.MQTT.Username != "env-user" {
+		t.Errorf("MQTT.Username = %s, want env-user", config.MQTT.Username)
+	}
+	if config.MQTT.Password != "env-pass" {
+		t.Errorf("MQTT.Password = %s, want env-pass", config.MQTT.Password)
+	}
+	if config.Ntfy.AuthToken != "env-token" {
+		t.Errorf("Ntfy.AuthToken = %s, want env-token", config.Ntfy.AuthToken)
+	}
+}

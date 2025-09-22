@@ -158,3 +158,105 @@ func normalizeBrokerURL(broker string) (string, error) {
 
 	return parsedURL.String(), nil
 }
+
+// FlagConfig holds command-line flag values
+type FlagConfig struct {
+	MQTTBroker     string
+	MQTTTopic      string
+	MQTTUsername   string
+	MQTTPassword   string
+	NtfyURL        string
+	NtfyAuthToken  string
+	NtfyPriority   string
+}
+
+// LoadConfigWithOverrides loads configuration with flag/env variable overrides
+func LoadConfigWithOverrides(configPath string, flags FlagConfig) (*Config, error) {
+	var config Config
+
+	// Load config file if provided
+	if configPath != "" {
+		fileConfig, err := LoadConfig(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load config file: %w", err)
+		}
+		config = *fileConfig
+	} else {
+		// Set defaults when no config file
+		setDefaults(&config)
+	}
+
+	// Apply environment variable overrides
+	applyEnvOverrides(&config)
+
+	// Apply flag overrides
+	applyFlagOverrides(&config, flags)
+
+	// Validate required fields are present
+	if err := validateRequiredConfig(&config); err != nil {
+		return nil, err
+	}
+
+	// Normalize broker URL
+	if config.MQTT.Broker != "" {
+		normalizedBroker, err := normalizeBrokerURL(config.MQTT.Broker)
+		if err != nil {
+			return nil, fmt.Errorf("invalid MQTT broker URL: %w", err)
+		}
+		config.MQTT.Broker = normalizedBroker
+	}
+
+	return &config, nil
+}
+
+// applyEnvOverrides applies environment variable overrides
+func applyEnvOverrides(config *Config) {
+	if val := os.Getenv("MQTT_USERNAME"); val != "" {
+		config.MQTT.Username = val
+	}
+	if val := os.Getenv("MQTT_PASSWORD"); val != "" {
+		config.MQTT.Password = val
+	}
+	if val := os.Getenv("NTFY_AUTH_TOKEN"); val != "" {
+		config.Ntfy.AuthToken = val
+	}
+}
+
+// applyFlagOverrides applies command-line flag overrides
+func applyFlagOverrides(config *Config, flags FlagConfig) {
+	if flags.MQTTBroker != "" {
+		config.MQTT.Broker = flags.MQTTBroker
+	}
+	if flags.MQTTTopic != "" {
+		config.MQTT.Topic = flags.MQTTTopic
+	}
+	if flags.MQTTUsername != "" {
+		config.MQTT.Username = flags.MQTTUsername
+	}
+	if flags.MQTTPassword != "" {
+		config.MQTT.Password = flags.MQTTPassword
+	}
+	if flags.NtfyURL != "" {
+		config.Ntfy.URL = flags.NtfyURL
+	}
+	if flags.NtfyAuthToken != "" {
+		config.Ntfy.AuthToken = flags.NtfyAuthToken
+	}
+	if flags.NtfyPriority != "" {
+		config.Ntfy.Priority = flags.NtfyPriority
+	}
+}
+
+// validateRequiredConfig validates that all required configuration is present
+func validateRequiredConfig(config *Config) error {
+	if config.MQTT.Broker == "" {
+		return fmt.Errorf("MQTT broker is required (use --mqtt-broker flag, config file, or both)")
+	}
+	if config.MQTT.Topic == "" {
+		return fmt.Errorf("MQTT topic is required (use --mqtt-topic flag, config file, or both)")
+	}
+	if config.Ntfy.URL == "" {
+		return fmt.Errorf("Ntfy URL is required (use --ntfy-url flag, config file, or both)")
+	}
+	return nil
+}

@@ -1,5 +1,8 @@
 # Example configuration for mqtt2ntfy
 # Copy this file to config.yaml and update the values
+#
+# All values can be overridden with command-line flags or environment variables
+# Precedence: flags > environment variables > config file
 
 mqtt:
   # MQTT broker URL - protocol and port are optional

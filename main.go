@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,20 +12,48 @@ func main() {
 	var configPath string
 	var verbose bool
 
-	flag.StringVar(&configPath, "config", "", "Path to YAML configuration file (required)")
-	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
-	flag.Parse()
+	// MQTT flags
+	var mqttBroker string
+	var mqttTopic string
+	var mqttUsername string
+	var mqttPassword string
 
-	if configPath == "" {
-		fmt.Println("Error: --config flag is required")
-		flag.Usage()
-		os.Exit(1)
-	}
+	// Ntfy flags
+	var ntfyURL string
+	var ntfyAuthToken string
+	var ntfyPriority string
+
+	flag.StringVar(&configPath, "config", "", "Path to YAML configuration file (optional if all required flags provided)")
+	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
+
+	// MQTT flags
+	flag.StringVar(&mqttBroker, "mqtt-broker", "", "MQTT broker URL (e.g., localhost, tcp://localhost:1883)")
+	flag.StringVar(&mqttTopic, "mqtt-topic", "", "MQTT topic to subscribe to")
+	flag.StringVar(&mqttUsername, "mqtt-username", "", "MQTT username for authentication")
+	flag.StringVar(&mqttPassword, "mqtt-password", "", "MQTT password for authentication")
+
+	// Ntfy flags
+	flag.StringVar(&ntfyURL, "ntfy-url", "", "Ntfy server URL (e.g., https://ntfy.sh/your-topic)")
+	flag.StringVar(&ntfyAuthToken, "ntfy-token", "", "Ntfy authentication token")
+	flag.StringVar(&ntfyPriority, "ntfy-priority", "", "Ntfy message priority (1-5)")
+
+	flag.Parse()
 
 	logger := SetupLogger(verbose)
 	logger.Info("Starting mqtt2ntfy", "config", configPath)
 
-	config, err := LoadConfig(configPath)
+	// Prepare flag configuration
+	flags := FlagConfig{
+		MQTTBroker:    mqttBroker,
+		MQTTTopic:     mqttTopic,
+		MQTTUsername:  mqttUsername,
+		MQTTPassword:  mqttPassword,
+		NtfyURL:       ntfyURL,
+		NtfyAuthToken: ntfyAuthToken,
+		NtfyPriority:  ntfyPriority,
+	}
+
+	config, err := LoadConfigWithOverrides(configPath, flags)
 	if err != nil {
 		logger.Error("Failed to load config", "error", err)
 		os.Exit(1)
