@@ -1,0 +1,11 @@
+# Configuration for mqtt2ntfy in Docker environment
+# MQTT broker URL (using Docker service name)
+mqtt_broker: "tcp://mosquitto:1883"
+
+# MQTT topic to subscribe to
+mqtt_topic: "test/messages"
+
+# Ntfy server URL (using Docker service name and predefined topic)
+ntfy_url: "http://ntfy:80/mqtt2ntfy-test"
+
+# No auth token needed for local testing

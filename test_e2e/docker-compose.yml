@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt2ntfy-mosquitto
+    ports:
+      - "2083:1883"
+      - "2081:9001"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - mqtt2ntfy-net
+
+  ntfy:
+    image: binwiederhier/ntfy
+    container_name: mqtt2ntfy-ntfy
+    command: serve
+    ports:
+      - "2080:80"
+    environment:
+      - NTFY_BASE_URL=http://localhost:2080
+    networks:
+      - mqtt2ntfy-net
+
+  mqtt2ntfy:
+    build:
+      context: ..
+      dockerfile: test_e2e/Dockerfile
+    container_name: mqtt2ntfy-app
+    depends_on:
+      - mosquitto
+      - ntfy
+    networks:
+      - mqtt2ntfy-net
+    restart: unless-stopped
+
+networks:
+  mqtt2ntfy-net:
+    driver: bridge
