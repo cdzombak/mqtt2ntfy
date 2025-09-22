@@ -300,3 +300,146 @@ func TestBuildNtfyURL(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMessagePriority(t *testing.T) {
+	tests := []struct {
+		name            string
+		message         string
+		defaultPriority string
+		expectedMessage string
+		expectedPriority string
+	}{
+		{
+			name:            "numeric priority 1",
+			message:         "1|Quiet notification",
+			defaultPriority: "3",
+			expectedMessage: "Quiet notification",
+			expectedPriority: "1",
+		},
+		{
+			name:            "numeric priority 2",
+			message:         "2|Low priority message",
+			defaultPriority: "3",
+			expectedMessage: "Low priority message",
+			expectedPriority: "2",
+		},
+		{
+			name:            "numeric priority 3",
+			message:         "3|Normal priority",
+			defaultPriority: "1",
+			expectedMessage: "Normal priority",
+			expectedPriority: "3",
+		},
+		{
+			name:            "numeric priority 4",
+			message:         "4|High priority",
+			defaultPriority: "3",
+			expectedMessage: "High priority",
+			expectedPriority: "4",
+		},
+		{
+			name:            "numeric priority 5",
+			message:         "5|Critical urgent alert",
+			defaultPriority: "3",
+			expectedMessage: "Critical urgent alert",
+			expectedPriority: "5",
+		},
+		{
+			name:            "default priority g",
+			message:         "g|Default priority message",
+			defaultPriority: "2",
+			expectedMessage: "Default priority message",
+			expectedPriority: "2",
+		},
+		{
+			name:            "high priority y",
+			message:         "y|Yellow alert",
+			defaultPriority: "3",
+			expectedMessage: "Yellow alert",
+			expectedPriority: "4",
+		},
+		{
+			name:            "high priority o",
+			message:         "o|Orange alert",
+			defaultPriority: "3",
+			expectedMessage: "Orange alert",
+			expectedPriority: "4",
+		},
+		{
+			name:            "urgent priority r",
+			message:         "r|Red alert! Emergency!",
+			defaultPriority: "3",
+			expectedMessage: "Red alert! Emergency!",
+			expectedPriority: "5",
+		},
+		{
+			name:            "no prefix",
+			message:         "Regular message without prefix",
+			defaultPriority: "3",
+			expectedMessage: "Regular message without prefix",
+			expectedPriority: "3",
+		},
+		{
+			name:            "invalid prefix",
+			message:         "x|Invalid prefix",
+			defaultPriority: "3",
+			expectedMessage: "x|Invalid prefix",
+			expectedPriority: "3",
+		},
+		{
+			name:            "message too short",
+			message:         "1",
+			defaultPriority: "3",
+			expectedMessage: "1",
+			expectedPriority: "3",
+		},
+		{
+			name:            "no pipe separator",
+			message:         "1-No pipe separator",
+			defaultPriority: "3",
+			expectedMessage: "1-No pipe separator",
+			expectedPriority: "3",
+		},
+		{
+			name:            "empty message after prefix",
+			message:         "5|",
+			defaultPriority: "3",
+			expectedMessage: "",
+			expectedPriority: "5",
+		},
+		{
+			name:            "message with multiple pipes",
+			message:         "2|Message with | multiple | pipes",
+			defaultPriority: "3",
+			expectedMessage: "Message with | multiple | pipes",
+			expectedPriority: "2",
+		},
+		{
+			name:            "empty default priority",
+			message:         "g|Message with empty default",
+			defaultPriority: "",
+			expectedMessage: "Message with empty default",
+			expectedPriority: "",
+		},
+		{
+			name:            "numeric priority with special characters",
+			message:         "4|Message with émojis 🚨 and ünícodé",
+			defaultPriority: "3",
+			expectedMessage: "Message with émojis 🚨 and ünícodé",
+			expectedPriority: "4",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanedMessage, priority := ParseMessagePriority(tt.message, tt.defaultPriority)
+
+			if cleanedMessage != tt.expectedMessage {
+				t.Errorf("ParseMessagePriority() cleanedMessage = %s, want %s", cleanedMessage, tt.expectedMessage)
+			}
+			if priority != tt.expectedPriority {
+				t.Errorf("ParseMessagePriority() priority = %s, want %s", priority, tt.expectedPriority)
+			}
+		})
+	}
+}

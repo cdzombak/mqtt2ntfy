@@ -81,6 +81,12 @@ func main() {
 	mqttHandler, err := ConnectAndSubscribe(context.Background(), config.MQTT.Broker, config.MQTT.Topic, config.MQTT.Username, config.MQTT.Password, config.GetMQTTConnectTimeout(), config.GetMQTTPingTimeout(), func(topic string, payload []byte) {
 		logger.Info("Received MQTT message", "topic", topic, "payload", string(payload))
 
+		// Parse message for priority prefix and get cleaned message
+		cleanedMessage, messagePriority := ParseMessagePriority(string(payload), config.Ntfy.Priority)
+		if cleanedMessage != string(payload) {
+			logger.Info("Extracted priority from message", "original", string(payload), "cleaned", cleanedMessage, "priority", messagePriority)
+		}
+
 		// Determine the Ntfy URL to use
 		var ntfyURL string
 		if IsWildcardTopic(config.MQTT.Topic) {
@@ -104,11 +110,11 @@ func main() {
 			ntfyURL = config.Ntfy.URL
 		}
 
-		// Forward to Ntfy with retry logic
-		if err := ForwardToNtfy(ntfyURL, string(payload), config.Ntfy.AuthToken, config.Ntfy.Priority, ntfyConfig, logger); err != nil {
+		// Forward to Ntfy with retry logic using cleaned message and extracted priority
+		if err := ForwardToNtfy(ntfyURL, cleanedMessage, config.Ntfy.AuthToken, messagePriority, ntfyConfig, logger); err != nil {
 			logger.Error("Failed to forward message to Ntfy after retries", "error", err)
 		} else {
-			logger.Info("Message forwarded to Ntfy successfully")
+			logger.Info("Message forwarded to Ntfy successfully", "priority", messagePriority)
 		}
 	})
 	if err != nil {

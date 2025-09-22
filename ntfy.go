@@ -196,3 +196,36 @@ func BuildNtfyURL(baseURL, ntfyTopic string) (string, error) {
 
 	return baseURL + "/" + ntfyTopic, nil
 }
+
+// ParseMessagePriority extracts priority from message prefix and returns cleaned message and priority
+// Supported prefixes: 1-5|, g|, y|, o|, r| (where 1-5 are Ntfy priorities, g=default, y/o=high, r=urgent)
+// Returns the cleaned message and the priority string to use
+func ParseMessagePriority(message, defaultPriority string) (cleanedMessage, priority string) {
+	// Check if message has at least 2 characters and second character is pipe
+	if len(message) < 2 || message[1] != '|' {
+		return message, defaultPriority
+	}
+
+	prefix := message[0]
+	cleanedMessage = message[2:] // Remove prefix and pipe
+
+	switch prefix {
+	case '1', '2', '3', '4', '5':
+		// Direct mapping to Ntfy priorities 1-5
+		priority = string(prefix)
+	case 'g':
+		// Default priority - use configured default
+		priority = defaultPriority
+	case 'y', 'o':
+		// Yellow/Orange = high priority (4)
+		priority = "4"
+	case 'r':
+		// Red = urgent priority (5)
+		priority = "5"
+	default:
+		// Unknown prefix, treat as regular message
+		return message, defaultPriority
+	}
+
+	return cleanedMessage, priority
+}

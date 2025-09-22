@@ -138,6 +138,53 @@ mqtt2ntfy --mqtt-broker localhost --mqtt-topic "#" --ntfy-url "https://ntfy.sh"
 - Multi-level wildcards (`/+` or nested levels) are not supported
 - Received topics with multiple levels beyond the wildcard pattern will be rejected
 
+## Message Priority Prefixes
+
+mqtt2ntfy supports setting message priority using prefixes at the beginning of MQTT messages. If a message begins with a priority prefix followed by a pipe (`|`), the priority will be extracted and applied to the Ntfy notification, and the prefix will be stripped from the message content.
+
+### Supported Priority Prefixes
+
+- **`1|`** through **`5|`** - Set specific Ntfy priority levels (1=min/quiet, 5=max/urgent)
+
+### How Priority Prefixes Work
+
+The priority prefix is removed from the message before sending to Ntfy:
+
+- **Message**: `2|Low priority info` → **Ntfy receives**: `Low priority info` with priority `2`
+- **Message**: `5|Critical database error` → **Ntfy receives**: `Critical database error` with priority `5`
+- **Message**: `Regular message` → **Ntfy receives**: `Regular message` with configured default priority
+
+### Priority Examples
+
+**Urgent priority alert:**
+```bash
+# Send message "5|Critical system failure" to MQTT
+# Results in Ntfy notification with priority 5 (urgent) and message "Critical system failure"
+mosquitto_pub -h localhost -t "alerts" -m "5|Critical system failure"
+```
+
+**Quiet priority notification:**
+```bash
+# Send message "1|Daily backup completed" to MQTT
+# Results in Ntfy notification with priority 1 (quiet) and message "Daily backup completed"
+mosquitto_pub -h localhost -t "alerts" -m "1|Daily backup completed"
+```
+
+**Combined with wildcard topics:**
+```bash
+# Subscribe to: monitoring/#
+# Message "4|High CPU usage" on monitoring/servers → https://ntfy.sh/servers with priority 4
+# Message "1|Cleanup complete" on monitoring/maintenance → https://ntfy.sh/maintenance with priority 1
+mqtt2ntfy --mqtt-broker localhost --mqtt-topic "monitoring/#" --ntfy-url "https://ntfy.sh"
+```
+
+### Notes
+
+- If no priority prefix is detected, the configured default priority is used
+- Invalid prefixes are ignored and treated as part of the message
+- Empty messages after prefix removal (e.g., `3|`) are sent as empty notifications
+- Priority prefixes work with both regular and wildcard topics
+
 ## Installation
 
 ## Debian via apt repository
