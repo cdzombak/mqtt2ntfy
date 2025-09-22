@@ -26,12 +26,18 @@ ntfy:
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			t.Logf("Failed to remove temp file: %v", err)
+		}
+	}()
 
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("Failed to close temp file: %v", err)
+	}
 
 	config, err := LoadConfig(tmpFile.Name())
 	if err != nil {
@@ -79,14 +85,20 @@ func TestLoadConfigInvalidYAML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			t.Logf("Failed to remove temp file: %v", err)
+		}
+	}()
 
 	invalidYAML := `invalid: yaml: content: [`
 	if _, err := tmpFile.WriteString(invalidYAML); err != nil {
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpFile.Close()
 
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("Failed to close temp file: %v", err)
+	}
 	_, err = LoadConfig(tmpFile.Name())
 	if err == nil {
 		t.Error("Expected error for invalid YAML, got nil")
@@ -101,8 +113,25 @@ func TestValidateConfig(t *testing.T) {
 	}{
 		{
 			name: "valid config",
-			config: Config{},
-			want:   nil,
+			config: Config{
+				MQTT: struct {
+					Broker         string `yaml:"broker"`
+					Topic          string `yaml:"topic"`
+					Username       string `yaml:"username,omitempty"`
+					Password       string `yaml:"password,omitempty"`
+					ConnectTimeout string `yaml:"connect_timeout,omitempty"`
+					PingTimeout    string `yaml:"ping_timeout,omitempty"`
+				}{Broker: "tcp://localhost:1883", Topic: "test/topic"},
+				Ntfy: struct {
+					URL        string `yaml:"url"`
+					AuthToken  string `yaml:"auth_token,omitempty"`
+					Priority   string `yaml:"priority,omitempty"`
+					Timeout    string `yaml:"timeout,omitempty"`
+					MaxRetries int    `yaml:"max_retries,omitempty"`
+					RetryDelay string `yaml:"retry_delay,omitempty"`
+				}{URL: "https://ntfy.sh/test"},
+			},
+			want: nil,
 		},
 		{
 			name: "missing mqtt.broker",
@@ -171,11 +200,6 @@ func TestValidateConfig(t *testing.T) {
 			want: fmt.Errorf("ntfy.url is required in config"),
 		},
 	}
-
-	// Set up valid config for first test
-	tests[0].config.MQTT.Broker = "tcp://localhost:1883"
-	tests[0].config.MQTT.Topic = "test/topic"
-	tests[0].config.Ntfy.URL = "https://ntfy.sh/test"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -353,13 +377,25 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 	config.Ntfy.AuthToken = "base-token"
 
 	// Set environment variables
-	os.Setenv("MQTT_USERNAME", "env-user")
-	os.Setenv("MQTT_PASSWORD", "env-pass")
-	os.Setenv("NTFY_AUTH_TOKEN", "env-token")
+	if err := os.Setenv("MQTT_USERNAME", "env-user"); err != nil {
+		t.Fatalf("Failed to set env var: %v", err)
+	}
+	if err := os.Setenv("MQTT_PASSWORD", "env-pass"); err != nil {
+		t.Fatalf("Failed to set env var: %v", err)
+	}
+	if err := os.Setenv("NTFY_AUTH_TOKEN", "env-token"); err != nil {
+		t.Fatalf("Failed to set env var: %v", err)
+	}
 	defer func() {
-		os.Unsetenv("MQTT_USERNAME")
-		os.Unsetenv("MQTT_PASSWORD")
-		os.Unsetenv("NTFY_AUTH_TOKEN")
+		if err := os.Unsetenv("MQTT_USERNAME"); err != nil {
+			t.Logf("Failed to unset env var: %v", err)
+		}
+		if err := os.Unsetenv("MQTT_PASSWORD"); err != nil {
+			t.Logf("Failed to unset env var: %v", err)
+		}
+		if err := os.Unsetenv("NTFY_AUTH_TOKEN"); err != nil {
+			t.Logf("Failed to unset env var: %v", err)
+		}
 	}()
 
 	applyEnvOverrides(&config)

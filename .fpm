@@ -1,0 +1,6 @@
+-s dir
+--name mqtt2ntfy
+--description "MQTT to Ntfy bridge"
+--url "https://github.com/cdzombak/mqtt2ntfy"
+--maintainer "Chris Dzombak <https://www.dzombak.com>"
+--license GPL3

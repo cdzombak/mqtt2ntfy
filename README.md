@@ -9,22 +9,9 @@ A simple program that subscribes to an MQTT topic and forwards messages to an [N
 mqtt2ntfy --config config.yaml [--verbose]
 ```
 
-### Using Command-Line Flags
-```bash
-mqtt2ntfy --mqtt-broker localhost --mqtt-topic "sensors/temp" --ntfy-url "https://ntfy.sh/my-topic" [--verbose]
-```
-
-### Using Environment Variables (for containers)
-```bash
-export MQTT_USERNAME="user"
-export MQTT_PASSWORD="pass"
-export NTFY_AUTH_TOKEN="token"
-mqtt2ntfy --mqtt-broker localhost --mqtt-topic "sensors/temp" --ntfy-url "https://ntfy.sh/my-topic"
-```
-
 ## Configuration
 
-mqtt2ntfy supports three configuration methods with the following precedence:
+mqtt2ntfy supports three configuration methods:
 
 **1. Command-line flags** (highest priority)
 **2. Environment variables**
@@ -95,7 +82,35 @@ mqtt2ntfy --config config.yaml --mqtt-broker "ssl://prod-mqtt.example.com:8883"
 
 ## Installation
 
-TK
+## Debian via apt repository
+
+Set up my `oss` apt repository:
+
+```shell
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://dist.cdzombak.net/keys/dist-cdzombak-net.gpg -o /etc/apt/keyrings/dist-cdzombak-net.gpg
+sudo chmod 644 /etc/apt/keyrings/dist-cdzombak-net.gpg
+sudo mkdir -p /etc/apt/sources.list.d
+sudo curl -fsSL https://dist.cdzombak.net/cdzombak-oss.sources -o /etc/apt/sources.list.d/cdzombak-oss.sources
+sudo chmod 644 /etc/apt/sources.list.d/cdzombak-oss.sources
+sudo apt update
+```
+
+Then install `mqtt2ntfy` via `apt-get`:
+
+```shell
+sudo apt-get install mqtt2ntfy
+```
+
+## Homebrew
+
+```shell
+brew install cdzombak/oss/mqtt2ntfy
+```
+
+## Manual from build artifacts
+
+Pre-built binaries for Linux and macOS on various architectures are downloadable from each [GitHub Release](https://github.com/cdzombak/mqtt2ntfy/releases). Debian packages for each release are available as well.
 
 ## Author
 

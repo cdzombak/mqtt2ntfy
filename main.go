@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
+var version = "dev"
+
 func main() {
 	var configPath string
 	var verbose bool
+	var showVersion bool
 
 	// MQTT flags
 	var mqttBroker string
@@ -25,6 +29,7 @@ func main() {
 
 	flag.StringVar(&configPath, "config", "", "Path to YAML configuration file (optional if all required flags provided)")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
+	flag.BoolVar(&showVersion, "version", false, "Show version information")
 
 	// MQTT flags
 	flag.StringVar(&mqttBroker, "mqtt-broker", "", "MQTT broker URL (e.g., localhost, tcp://localhost:1883)")
@@ -38,6 +43,11 @@ func main() {
 	flag.StringVar(&ntfyPriority, "ntfy-priority", "", "Ntfy message priority (1-5)")
 
 	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("mqtt2ntfy version %s\n", version)
+		os.Exit(0)
+	}
 
 	logger := SetupLogger(verbose)
 	logger.Info("Starting mqtt2ntfy", "config", configPath)

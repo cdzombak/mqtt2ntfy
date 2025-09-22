@@ -161,13 +161,13 @@ func normalizeBrokerURL(broker string) (string, error) {
 
 // FlagConfig holds command-line flag values
 type FlagConfig struct {
-	MQTTBroker     string
-	MQTTTopic      string
-	MQTTUsername   string
-	MQTTPassword   string
-	NtfyURL        string
-	NtfyAuthToken  string
-	NtfyPriority   string
+	MQTTBroker    string
+	MQTTTopic     string
+	MQTTUsername  string
+	MQTTPassword  string
+	NtfyURL       string
+	NtfyAuthToken string
+	NtfyPriority  string
 }
 
 // LoadConfigWithOverrides loads configuration with flag/env variable overrides
@@ -256,7 +256,7 @@ func validateRequiredConfig(config *Config) error {
 		return fmt.Errorf("MQTT topic is required (use --mqtt-topic flag, config file, or both)")
 	}
 	if config.Ntfy.URL == "" {
-		return fmt.Errorf("Ntfy URL is required (use --ntfy-url flag, config file, or both)")
+		return fmt.Errorf("ntfy URL is required (use --ntfy-url flag, config file, or both)")
 	}
 	return nil
 }

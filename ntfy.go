@@ -72,7 +72,12 @@ func (n *HTTPNtfyClient) sendMessageOnce(url, message, authToken, priority strin
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			// Log error but don't fail the function
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("ntfy server returned status: %d (server error)", resp.StatusCode)
