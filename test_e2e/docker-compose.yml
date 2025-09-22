@@ -1,5 +1,4 @@
-version: '3.8'
-
+---
 services:
   mosquitto:
     image: eclipse-mosquitto:2.0
@@ -11,7 +10,6 @@ services:
       - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
       - mqtt2ntfy-net
-
   ntfy:
     image: binwiederhier/ntfy
     container_name: mqtt2ntfy-ntfy
@@ -28,6 +26,8 @@ services:
       context: ..
       dockerfile: test_e2e/Dockerfile
     container_name: mqtt2ntfy-app
+    ports:
+      - "2085:2085"
     depends_on:
       - mosquitto
       - ntfy
