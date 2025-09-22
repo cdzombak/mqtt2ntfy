@@ -5,7 +5,7 @@ A simple program that subscribes to an MQTT topic and forwards messages to an [N
 ## Usage
 
 ```bash
-mqtt2ntfy --config config.yaml [--verbose]
+mqtt2ntfy -config config.yaml [-verbose]
 ```
 
 ## Configuration
