@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -26,15 +27,17 @@ type NtfyConfig struct {
 type HTTPNtfyClient struct {
 	client *http.Client
 	config NtfyConfig
+	logger *slog.Logger
 }
 
 // NewNtfyClient creates a new HTTP Ntfy client with configuration
-func NewNtfyClient(config NtfyConfig) *HTTPNtfyClient {
+func NewNtfyClient(config NtfyConfig, logger *slog.Logger) *HTTPNtfyClient {
 	return &HTTPNtfyClient{
 		client: &http.Client{
 			Timeout: config.Timeout,
 		},
 		config: config,
+		logger: logger,
 	}
 }
 
@@ -75,7 +78,7 @@ func (n *HTTPNtfyClient) sendMessageOnce(url, message, authToken, priority strin
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			// Log error but don't fail the function
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
+			n.logger.Warn("Failed to close response body", "error", err)
 		}
 	}()
 
@@ -114,7 +117,7 @@ func isRetryableError(err error) bool {
 }
 
 // ForwardToNtfy forwards a message to Ntfy with retry logic
-func ForwardToNtfy(url, message, authToken, priority string, config NtfyConfig) error {
-	client := NewNtfyClient(config)
+func ForwardToNtfy(url, message, authToken, priority string, config NtfyConfig, logger *slog.Logger) error {
+	client := NewNtfyClient(config, logger)
 	return client.SendMessage(url, message, authToken, priority)
 }

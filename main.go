@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,12 +43,12 @@ func main() {
 
 	flag.Parse()
 
+	logger := SetupLogger(verbose)
+
 	if showVersion {
-		fmt.Printf("mqtt2ntfy version %s\n", version)
+		logger.Info("Version information", "version", version)
 		os.Exit(0)
 	}
-
-	logger := SetupLogger(verbose)
 	logger.Info("Starting mqtt2ntfy", "config", configPath)
 
 	// Prepare flag configuration
@@ -83,7 +82,7 @@ func main() {
 		logger.Info("Received MQTT message", "topic", topic, "payload", string(payload))
 
 		// Forward to Ntfy with retry logic
-		if err := ForwardToNtfy(config.Ntfy.URL, string(payload), config.Ntfy.AuthToken, config.Ntfy.Priority, ntfyConfig); err != nil {
+		if err := ForwardToNtfy(config.Ntfy.URL, string(payload), config.Ntfy.AuthToken, config.Ntfy.Priority, ntfyConfig, logger); err != nil {
 			logger.Error("Failed to forward message to Ntfy after retries", "error", err)
 		} else {
 			logger.Info("Message forwarded to Ntfy successfully")

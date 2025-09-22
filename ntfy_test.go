@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -22,7 +24,8 @@ func TestNewNtfyClient(t *testing.T) {
 		MaxRetries: 3,
 		RetryDelay: 1 * time.Second,
 	}
-	client := NewNtfyClient(config)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+	client := NewNtfyClient(config, logger)
 	if client == nil {
 		t.Error("NewNtfyClient returned nil")
 	}
@@ -40,8 +43,9 @@ func TestForwardToNtfySuccess(t *testing.T) {
 		MaxRetries: 3,
 		RetryDelay: 1 * time.Second,
 	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	err := ForwardToNtfy(server.URL, "test message", "", "", config)
+	err := ForwardToNtfy(server.URL, "test message", "", "", config, logger)
 	if err != nil {
 		t.Errorf("ForwardToNtfy failed: %v", err)
 	}
@@ -59,8 +63,9 @@ func TestForwardToNtfyFailure(t *testing.T) {
 		MaxRetries: 3,
 		RetryDelay: 1 * time.Second,
 	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	err := ForwardToNtfy(server.URL, "test message", "", "", config)
+	err := ForwardToNtfy(server.URL, "test message", "", "", config, logger)
 	if err == nil {
 		t.Error("Expected error for server error, got nil")
 	}
@@ -72,8 +77,9 @@ func TestForwardToNtfyInvalidURL(t *testing.T) {
 		MaxRetries: 3,
 		RetryDelay: 1 * time.Second,
 	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	err := ForwardToNtfy("invalid-url", "test message", "", "", config)
+	err := ForwardToNtfy("invalid-url", "test message", "", "", config, logger)
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
 	}
