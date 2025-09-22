@@ -45,5 +45,21 @@ ntfy:
   # Optional: Maximum number of retry attempts for failed requests (default: 3)
   # max_retries: 3
 
-  # Optional: Initial delay between retry attempts with exponential backoff (default: 1s)
-  # retry_delay: "1s"
+   # Optional: Initial delay between retry attempts with exponential backoff (default: 1s)
+   # retry_delay: "1s"
+
+heartbeat:
+  # Optional: URL to send heartbeats to (e.g., Uptime Kuma push URL)
+  # If set, heartbeats will be sent to this URL
+  # url: "https://uptimekuma.example.com:9001/api/push/1234abcd?status=up&msg=OK&ping="
+
+  # Optional: Interval between heartbeats (default: 30s)
+  # interval: "30s"
+
+  # Optional: Liveness threshold - if no heartbeat sent within this time, considered unhealthy (default: 60s)
+  # liveness_threshold: "60s"
+
+  # Optional: Port for health endpoint server (default: 8888)
+  # If set to a non-zero value, the health endpoint server will be started
+  # port: 8888
+

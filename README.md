@@ -32,7 +32,14 @@ ntfy:
   url: "https://ntfy.sh/your-topic-name"
   auth_token: "your-ntfy-auth-token"  # Optional
   priority: "3"  # Optional (1-5)
+
+heartbeat:
+  url: "https://uptimekuma.example.com:9001/api/push/1234abcd?status=up&msg=OK&ping="  # Optional: URL for sending heartbeats
+  interval: "30s"  # Optional: Interval between heartbeats (default: 30s)
+  liveness_threshold: "60s"  # Optional: Liveness threshold (default: 60s)
+  port: 8888  # Optional: Port for health endpoint server (if set > 0, server will start)
 ```
+**Note:** Heartbeat functionality is automatically enabled when either `url` or `port` is configured.
 
 ### Command-Line Flags
 
