@@ -81,8 +81,31 @@ func main() {
 	mqttHandler, err := ConnectAndSubscribe(context.Background(), config.MQTT.Broker, config.MQTT.Topic, config.MQTT.Username, config.MQTT.Password, config.GetMQTTConnectTimeout(), config.GetMQTTPingTimeout(), func(topic string, payload []byte) {
 		logger.Info("Received MQTT message", "topic", topic, "payload", string(payload))
 
+		// Determine the Ntfy URL to use
+		var ntfyURL string
+		if IsWildcardTopic(config.MQTT.Topic) {
+			// Extract Ntfy topic from MQTT topic for wildcard subscriptions
+			ntfyTopic, err := ExtractNtfyTopicFromMQTT(config.MQTT.Topic, topic)
+			if err != nil {
+				logger.Error("Failed to extract Ntfy topic from MQTT topic", "error", err, "subscription", config.MQTT.Topic, "received", topic)
+				return
+			}
+
+			// Build the dynamic Ntfy URL
+			ntfyURL, err = BuildNtfyURL(config.Ntfy.URL, ntfyTopic)
+			if err != nil {
+				logger.Error("Failed to build Ntfy URL", "error", err, "base_url", config.Ntfy.URL, "ntfy_topic", ntfyTopic)
+				return
+			}
+
+			logger.Info("Using dynamic Ntfy topic", "mqtt_topic", topic, "ntfy_topic", ntfyTopic, "ntfy_url", ntfyURL)
+		} else {
+			// Use the configured Ntfy URL directly for non-wildcard subscriptions
+			ntfyURL = config.Ntfy.URL
+		}
+
 		// Forward to Ntfy with retry logic
-		if err := ForwardToNtfy(config.Ntfy.URL, string(payload), config.Ntfy.AuthToken, config.Ntfy.Priority, ntfyConfig, logger); err != nil {
+		if err := ForwardToNtfy(ntfyURL, string(payload), config.Ntfy.AuthToken, config.Ntfy.Priority, ntfyConfig, logger); err != nil {
 			logger.Error("Failed to forward message to Ntfy after retries", "error", err)
 		} else {
 			logger.Info("Message forwarded to Ntfy successfully")

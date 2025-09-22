@@ -84,3 +84,219 @@ func TestForwardToNtfyInvalidURL(t *testing.T) {
 		t.Error("Expected error for invalid URL, got nil")
 	}
 }
+
+func TestIsWildcardTopic(t *testing.T) {
+	tests := []struct {
+		name     string
+		topic    string
+		expected bool
+	}{
+		{
+			name:     "wildcard topic",
+			topic:    "my/notifications/#",
+			expected: true,
+		},
+		{
+			name:     "simple wildcard",
+			topic:    "#",
+			expected: true,
+		},
+		{
+			name:     "root wildcard",
+			topic:    "/#",
+			expected: true,
+		},
+		{
+			name:     "regular topic",
+			topic:    "my/notifications/alerts",
+			expected: false,
+		},
+		{
+			name:     "topic ending with hash but not wildcard",
+			topic:    "my/notifications#",
+			expected: false,
+		},
+		{
+			name:     "empty topic",
+			topic:    "",
+			expected: false,
+		},
+		{
+			name:     "single character",
+			topic:    "#",
+			expected: true,
+		},
+		{
+			name:     "only slash",
+			topic:    "/",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsWildcardTopic(tt.topic)
+			if result != tt.expected {
+				t.Errorf("IsWildcardTopic(%s) = %v, want %v", tt.topic, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractNtfyTopicFromMQTT(t *testing.T) {
+	tests := []struct {
+		name             string
+		subscriptionTopic string
+		receivedTopic    string
+		expectedTopic    string
+		expectError      bool
+	}{
+		{
+			name:             "valid single level extraction",
+			subscriptionTopic: "my/notifications/#",
+			receivedTopic:    "my/notifications/alerts",
+			expectedTopic:    "alerts",
+			expectError:      false,
+		},
+		{
+			name:             "valid single level with underscore",
+			subscriptionTopic: "home/sensors/#",
+			receivedTopic:    "home/sensors/temperature_sensor",
+			expectedTopic:    "temperature_sensor",
+			expectError:      false,
+		},
+		{
+			name:             "valid root level wildcard",
+			subscriptionTopic: "#",
+			receivedTopic:    "alerts",
+			expectedTopic:    "alerts",
+			expectError:      false,
+		},
+		{
+			name:             "non-wildcard subscription",
+			subscriptionTopic: "my/notifications/alerts",
+			receivedTopic:    "my/notifications/alerts",
+			expectedTopic:    "",
+			expectError:      true,
+		},
+		{
+			name:             "mismatched base pattern",
+			subscriptionTopic: "my/notifications/#",
+			receivedTopic:    "other/notifications/alerts",
+			expectedTopic:    "",
+			expectError:      true,
+		},
+		{
+			name:             "no additional level",
+			subscriptionTopic: "my/notifications/#",
+			receivedTopic:    "my/notifications",
+			expectedTopic:    "",
+			expectError:      true,
+		},
+		{
+			name:             "multiple levels beyond wildcard",
+			subscriptionTopic: "my/notifications/#",
+			receivedTopic:    "my/notifications/alerts/critical",
+			expectedTopic:    "",
+			expectError:      true,
+		},
+		{
+			name:             "exact match with trailing slash",
+			subscriptionTopic: "my/notifications/#",
+			receivedTopic:    "my/notifications/",
+			expectedTopic:    "",
+			expectError:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractNtfyTopicFromMQTT(tt.subscriptionTopic, tt.receivedTopic)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("ExtractNtfyTopicFromMQTT() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ExtractNtfyTopicFromMQTT() unexpected error: %v", err)
+				}
+				if result != tt.expectedTopic {
+					t.Errorf("ExtractNtfyTopicFromMQTT() = %s, want %s", result, tt.expectedTopic)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildNtfyURL(t *testing.T) {
+	tests := []struct {
+		name        string
+		baseURL     string
+		ntfyTopic   string
+		expectedURL string
+		expectError bool
+	}{
+		{
+			name:        "valid URL construction",
+			baseURL:     "https://ntfy.sh",
+			ntfyTopic:   "alerts",
+			expectedURL: "https://ntfy.sh/alerts",
+			expectError: false,
+		},
+		{
+			name:        "base URL with trailing slash",
+			baseURL:     "https://ntfy.sh/",
+			ntfyTopic:   "alerts",
+			expectedURL: "https://ntfy.sh/alerts",
+			expectError: false,
+		},
+		{
+			name:        "custom domain",
+			baseURL:     "https://notifications.example.com",
+			ntfyTopic:   "server_alerts",
+			expectedURL: "https://notifications.example.com/server_alerts",
+			expectError: false,
+		},
+		{
+			name:        "empty base URL",
+			baseURL:     "",
+			ntfyTopic:   "alerts",
+			expectedURL: "",
+			expectError: true,
+		},
+		{
+			name:        "empty ntfy topic",
+			baseURL:     "https://ntfy.sh",
+			ntfyTopic:   "",
+			expectedURL: "",
+			expectError: true,
+		},
+		{
+			name:        "topic with special characters",
+			baseURL:     "https://ntfy.sh",
+			ntfyTopic:   "server-alerts_2024",
+			expectedURL: "https://ntfy.sh/server-alerts_2024",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := BuildNtfyURL(tt.baseURL, tt.ntfyTopic)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("BuildNtfyURL() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("BuildNtfyURL() unexpected error: %v", err)
+				}
+				if result != tt.expectedURL {
+					t.Errorf("BuildNtfyURL() = %s, want %s", result, tt.expectedURL)
+				}
+			}
+		})
+	}
+}

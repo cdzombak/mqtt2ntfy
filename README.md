@@ -80,6 +80,64 @@ export NTFY_AUTH_TOKEN="tk_prod_token"
 mqtt2ntfy --config config.yaml --mqtt-broker "ssl://prod-mqtt.example.com:8883"
 ```
 
+## Wildcard Topic Support
+
+mqtt2ntfy supports MQTT one-level wildcard topics (ending with `/#`). When subscribing to a wildcard topic, the last part of the received MQTT topic will be used as the Ntfy topic name.
+
+### How Wildcard Topics Work
+
+- **Subscribe to**: `my/notifications/#`
+- **Receive message on**: `my/notifications/alerts` → **Send to Ntfy topic**: `alerts`
+- **Receive message on**: `my/notifications/warnings` → **Send to Ntfy topic**: `warnings`
+
+### Configuration
+
+For wildcard topics, set the **Ntfy URL to the base URL** (without the specific topic):
+
+```yaml
+mqtt:
+  topic: "my/notifications/#"
+ntfy:
+  url: "https://ntfy.sh"  # Base URL only - topic will be appended dynamically
+```
+
+Or with command-line flags:
+```bash
+mqtt2ntfy --mqtt-broker localhost --mqtt-topic "home/sensors/#" --ntfy-url "https://ntfy.sh"
+```
+
+### Wildcard Examples
+
+**Home automation sensors:**
+```bash
+# Subscribe to: home/sensors/#
+# Messages on home/sensors/temperature → https://ntfy.sh/temperature
+# Messages on home/sensors/humidity → https://ntfy.sh/humidity
+mqtt2ntfy --mqtt-broker localhost --mqtt-topic "home/sensors/#" --ntfy-url "https://ntfy.sh"
+```
+
+**Server monitoring:**
+```bash
+# Subscribe to: monitoring/#
+# Messages on monitoring/cpu → https://alerts.example.com/cpu
+# Messages on monitoring/disk → https://alerts.example.com/disk
+mqtt2ntfy --mqtt-broker monitor.local --mqtt-topic "monitoring/#" --ntfy-url "https://alerts.example.com"
+```
+
+**Root wildcard:**
+```bash
+# Subscribe to: # (matches any single-level topic)
+# Messages on alerts → https://ntfy.sh/alerts
+# Messages on warnings → https://ntfy.sh/warnings
+mqtt2ntfy --mqtt-broker localhost --mqtt-topic "#" --ntfy-url "https://ntfy.sh"
+```
+
+### Limitations
+
+- Only **one-level wildcards** (`/#`) are supported
+- Multi-level wildcards (`/+` or nested levels) are not supported
+- Received topics with multiple levels beyond the wildcard pattern will be rejected
+
 ## Installation
 
 ## Debian via apt repository

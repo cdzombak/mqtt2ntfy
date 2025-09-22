@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -120,4 +121,78 @@ func isRetryableError(err error) bool {
 func ForwardToNtfy(url, message, authToken, priority string, config NtfyConfig, logger *slog.Logger) error {
 	client := NewNtfyClient(config, logger)
 	return client.SendMessage(url, message, authToken, priority)
+}
+
+// IsWildcardTopic checks if the MQTT topic ends with /# or is just #
+func IsWildcardTopic(mqttTopic string) bool {
+	if mqttTopic == "#" {
+		return true
+	}
+	return len(mqttTopic) >= 2 && mqttTopic[len(mqttTopic)-2:] == "/#"
+}
+
+// ExtractNtfyTopicFromMQTT extracts the Ntfy topic from an MQTT topic when using wildcards
+// For example: "my/notifications/alerts" with subscription "my/notifications/#" returns "alerts"
+func ExtractNtfyTopicFromMQTT(subscriptionTopic, receivedTopic string) (string, error) {
+	if !IsWildcardTopic(subscriptionTopic) {
+		return "", fmt.Errorf("subscription topic %s is not a wildcard topic", subscriptionTopic)
+	}
+
+	// Handle root wildcard case (subscription is just "#")
+	if subscriptionTopic == "#" {
+		// For root wildcard, the entire received topic is the ntfy topic
+		// but it should only be one level (no slashes)
+		if strings.Contains(receivedTopic, "/") {
+			return "", fmt.Errorf("received topic %s has multiple levels beyond subscription pattern %s (one-level wildcard only)", receivedTopic, subscriptionTopic)
+		}
+		if receivedTopic == "" {
+			return "", fmt.Errorf("received topic %s has no additional level beyond subscription pattern %s", receivedTopic, subscriptionTopic)
+		}
+		return receivedTopic, nil
+	}
+
+	// Remove the /# suffix to get the base pattern
+	basePattern := subscriptionTopic[:len(subscriptionTopic)-2]
+
+	// Check if the received topic starts with the base pattern
+	if !strings.HasPrefix(receivedTopic, basePattern) {
+		return "", fmt.Errorf("received topic %s does not match subscription pattern %s", receivedTopic, subscriptionTopic)
+	}
+
+	// Extract the remaining part after the base pattern
+	remainder := receivedTopic[len(basePattern):]
+
+	// Remove leading slash if present
+	if len(remainder) > 0 && remainder[0] == '/' {
+		remainder = remainder[1:]
+	}
+
+	// Check that there's exactly one more level (no additional slashes)
+	if remainder == "" {
+		return "", fmt.Errorf("received topic %s has no additional level beyond subscription pattern %s", receivedTopic, subscriptionTopic)
+	}
+
+	if strings.Contains(remainder, "/") {
+		return "", fmt.Errorf("received topic %s has multiple levels beyond subscription pattern %s (one-level wildcard only)", receivedTopic, subscriptionTopic)
+	}
+
+	return remainder, nil
+}
+
+// BuildNtfyURL constructs the Ntfy URL using a base URL and extracted topic
+// For example: base "https://ntfy.sh" + topic "alerts" = "https://ntfy.sh/alerts"
+func BuildNtfyURL(baseURL, ntfyTopic string) (string, error) {
+	if baseURL == "" {
+		return "", fmt.Errorf("base URL cannot be empty")
+	}
+	if ntfyTopic == "" {
+		return "", fmt.Errorf("ntfy topic cannot be empty")
+	}
+
+	// Remove trailing slash from base URL if present
+	if baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+
+	return baseURL + "/" + ntfyTopic, nil
 }

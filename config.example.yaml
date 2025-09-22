@@ -11,6 +11,8 @@ mqtt:
   broker: "localhost"
 
   # MQTT topic to subscribe to
+  # For regular topics: "home/sensors/temperature"
+  # For wildcard topics: "home/sensors/#" (uses last part as ntfy topic)
   topic: "home/sensors/temperature"
 
   # Optional: MQTT username for authentication
@@ -26,7 +28,9 @@ mqtt:
   # ping_timeout: "10s"
 
 ntfy:
-  # Ntfy server URL (e.g., https://ntfy.sh/your-topic-name)
+  # Ntfy server URL
+  # For regular topics: "https://ntfy.sh/your-topic-name"
+  # For wildcard topics: "https://ntfy.sh" (base URL only)
   url: "https://ntfy.sh/your-topic-name"
 
   # Optional: Authentication token for Ntfy (if required)
