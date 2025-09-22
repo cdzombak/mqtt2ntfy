@@ -1,0 +1,40 @@
+# Example configuration for mqtt2ntfy
+# Copy this file to config.yaml and update the values
+
+mqtt:
+  # MQTT broker URL (e.g., tcp://localhost:1883 for local Mosquitto)
+  broker: "tcp://localhost:1883"
+
+  # MQTT topic to subscribe to
+  topic: "home/sensors/temperature"
+
+  # Optional: MQTT username for authentication
+  # username: "your-mqtt-username"
+
+  # Optional: MQTT password for authentication
+  # password: "your-mqtt-password"
+
+  # Optional: MQTT connection timeout (default: 30s)
+  # connect_timeout: "30s"
+
+  # Optional: MQTT ping timeout (default: 10s)
+  # ping_timeout: "10s"
+
+ntfy:
+  # Ntfy server URL (e.g., https://ntfy.sh/your-topic-name)
+  url: "https://ntfy.sh/your-topic-name"
+
+  # Optional: Authentication token for Ntfy (if required)
+  # auth_token: "your-ntfy-auth-token"
+
+  # Optional: Message priority (1-5, default: 3)
+  # priority: "3"
+
+  # Optional: HTTP request timeout (default: 10s)
+  # timeout: "10s"
+
+  # Optional: Maximum number of retry attempts for failed requests (default: 3)
+  # max_retries: 3
+
+  # Optional: Initial delay between retry attempts with exponential backoff (default: 1s)
+  # retry_delay: "1s"
