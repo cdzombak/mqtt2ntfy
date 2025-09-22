@@ -183,10 +183,11 @@ mosquitto_pub -h localhost -t "alerts" -m "1|Daily backup completed"
 # Message "4|High CPU usage" on monitoring/servers → https://ntfy.sh/servers with priority 4
 # Message "1|Cleanup complete" on monitoring/maintenance → https://ntfy.sh/maintenance with priority 1
 mqtt2ntfy --mqtt-broker localhost --mqtt-topic "monitoring/#" --ntfy-url "https://ntfy.sh"
+```
 
 ## Installation
 
-## Debian via apt repository
+### Debian via apt repository
 
 Set up my `oss` apt repository:
 
@@ -206,13 +207,13 @@ Then install `mqtt2ntfy` via `apt-get`:
 sudo apt-get install mqtt2ntfy
 ```
 
-## Homebrew
+### Homebrew
 
 ```shell
 brew install cdzombak/oss/mqtt2ntfy
 ```
 
-## Manual from build artifacts
+### Manual from build artifacts
 
 Pre-built binaries for Linux and macOS on various architectures are downloadable from each [GitHub Release](https://github.com/cdzombak/mqtt2ntfy/releases). Debian packages for each release are available as well.
 
