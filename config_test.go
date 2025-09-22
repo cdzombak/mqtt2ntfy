@@ -192,3 +192,110 @@ func TestValidateConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeBrokerURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "hostname only",
+			input:    "localhost",
+			expected: "tcp://localhost:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "hostname with port",
+			input:    "localhost:1884",
+			expected: "tcp://localhost:1884",
+			wantErr:  false,
+		},
+		{
+			name:     "full tcp URL",
+			input:    "tcp://localhost:1883",
+			expected: "tcp://localhost:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "tcp without port",
+			input:    "tcp://localhost",
+			expected: "tcp://localhost:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "ssl without port",
+			input:    "ssl://localhost",
+			expected: "ssl://localhost:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "ssl with port",
+			input:    "ssl://localhost:8883",
+			expected: "ssl://localhost:8883",
+			wantErr:  false,
+		},
+		{
+			name:     "websocket URL unchanged",
+			input:    "ws://localhost:8080/mqtt",
+			expected: "ws://localhost:8080/mqtt",
+			wantErr:  false,
+		},
+		{
+			name:     "secure websocket URL unchanged",
+			input:    "wss://localhost:8080/mqtt",
+			expected: "wss://localhost:8080/mqtt",
+			wantErr:  false,
+		},
+		{
+			name:     "IP address",
+			input:    "192.168.1.100",
+			expected: "tcp://192.168.1.100:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "IP address with port",
+			input:    "192.168.1.100:1884",
+			expected: "tcp://192.168.1.100:1884",
+			wantErr:  false,
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "FQDN hostname",
+			input:    "mqtt.example.com",
+			expected: "tcp://mqtt.example.com:1883",
+			wantErr:  false,
+		},
+		{
+			name:     "FQDN with port",
+			input:    "mqtt.example.com:1884",
+			expected: "tcp://mqtt.example.com:1884",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := normalizeBrokerURL(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("normalizeBrokerURL() expected error for input '%s', got nil", tt.input)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("normalizeBrokerURL() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if result != tt.expected {
+					t.Errorf("normalizeBrokerURL() = '%s', want '%s'", result, tt.expected)
+				}
+			}
+		})
+	}
+}

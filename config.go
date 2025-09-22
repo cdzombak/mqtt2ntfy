@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -45,6 +47,13 @@ func LoadConfig(filePath string) (*Config, error) {
 	}
 
 	setDefaults(&config)
+
+	// Normalize the broker URL
+	normalizedBroker, err := normalizeBrokerURL(config.MQTT.Broker)
+	if err != nil {
+		return nil, fmt.Errorf("invalid MQTT broker URL: %w", err)
+	}
+	config.MQTT.Broker = normalizedBroker
 
 	return &config, nil
 }
@@ -116,4 +125,36 @@ func (c *Config) GetNtfyRetryDelay() time.Duration {
 		return 1 * time.Second // fallback default
 	}
 	return duration
+}
+
+// normalizeBrokerURL adds default protocol (tcp://) and port (1883) if not specified
+func normalizeBrokerURL(broker string) (string, error) {
+	if broker == "" {
+		return "", fmt.Errorf("broker URL cannot be empty")
+	}
+
+	originalBroker := broker
+
+	// If no protocol is specified, add tcp://
+	if !strings.Contains(broker, "://") {
+		broker = "tcp://" + broker
+	}
+
+	// Parse the URL to validate and potentially add default port
+	parsedURL, err := url.Parse(broker)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse broker URL '%s': %w", originalBroker, err)
+	}
+
+	// Only add default port for tcp and ssl schemes
+	if (parsedURL.Scheme == "tcp" || parsedURL.Scheme == "ssl") && parsedURL.Port() == "" {
+		// Check if we have just a hostname or hostname:port
+		host := parsedURL.Host
+		if !strings.Contains(host, ":") {
+			// No port specified, add default MQTT port
+			parsedURL.Host = host + ":1883"
+		}
+	}
+
+	return parsedURL.String(), nil
 }

@@ -2,8 +2,10 @@
 # Copy this file to config.yaml and update the values
 
 mqtt:
-  # MQTT broker URL (e.g., tcp://localhost:1883 for local Mosquitto)
-  broker: "tcp://localhost:1883"
+  # MQTT broker URL - protocol and port are optional
+  # Examples: "localhost", "localhost:1884", "tcp://localhost:1883", "ssl://mqtt.example.com:8883"
+  # Defaults: protocol=tcp://, port=1883
+  broker: "localhost"
 
   # MQTT topic to subscribe to
   topic: "home/sensors/temperature"
