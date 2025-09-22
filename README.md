@@ -183,14 +183,6 @@ mosquitto_pub -h localhost -t "alerts" -m "1|Daily backup completed"
 # Message "4|High CPU usage" on monitoring/servers → https://ntfy.sh/servers with priority 4
 # Message "1|Cleanup complete" on monitoring/maintenance → https://ntfy.sh/maintenance with priority 1
 mqtt2ntfy --mqtt-broker localhost --mqtt-topic "monitoring/#" --ntfy-url "https://ntfy.sh"
-```
-
-### Notes
-
-- If no priority prefix is detected, the configured default priority is used
-- Invalid prefixes are ignored and treated as part of the message
-- Empty messages after prefix removal (e.g., `3|`) are sent as empty notifications
-- Priority prefixes work with both regular and wildcard topics
 
 ## Installation
 
